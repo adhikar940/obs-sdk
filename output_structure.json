@@ -1,0 +1,32 @@
+{
+  "name": "multi_db_workflow",
+  "context": { "trace_id": "0x...", "span_id": "0x..." },
+  "start_time": "2026-07-09T12:00:00Z",
+  "end_time": "2026-07-09T12:00:05Z",
+  "children": [
+    {
+      "name": "valkey_operation",
+      "start_time": "2026-07-09T12:00:01Z",
+      "end_time": "2026-07-09T12:00:02Z",
+      "attributes": { "db.system": "redis", "db.operation": "SET" }
+    },
+    {
+      "name": "minio_operation",
+      "start_time": "2026-07-09T12:00:02Z",
+      "end_time": "2026-07-09T12:00:03Z",
+      "attributes": { "http.method": "PUT", "http.url": "https://play.min.io/test-bucket/test-object" }
+    },
+    {
+      "name": "clickhouse_operation",
+      "start_time": "2026-07-09T12:00:03Z",
+      "end_time": "2026-07-09T12:00:04Z",
+      "attributes": { "db.system": "clickhouse", "db.statement": "SELECT 1" }
+    },
+    {
+      "name": "postgres_operation",
+      "start_time": "2026-07-09T12:00:04Z",
+      "end_time": "2026-07-09T12:00:05Z",
+      "attributes": { "db.system": "postgresql", "db.statement": "SELECT 1" }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# Environment variables and secrets
+
+
+# Python / Virtual Environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+*.egg-info/
+*.egg
+build/
+dist/
+
+# Docker volume mounts or local data dumps (if any)
+data/
+*.db
+*.sqlite
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS specific files
+Thumbs.db
+
+# Test & Coverage reports
+.pytest_cache/
+.coverage
+htmlcov/
