@@ -1,5 +1,8 @@
 # Environment variables and secrets
-
+.env
+.env*.local
+.env.dev
+.env.prod
 
 # Python / Virtual Environment
 __pycache__/
