@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgis/postgis:17-3.5
     container_name: postgres
     restart: unless-stopped
     ports:
@@ -115,22 +115,89 @@ services:
     volumes:
       - valkey_data:/data
 
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: redisinsight
+  valkey-admin:
+    image: valkey/valkey-admin:latest
+    container_name: valkey-admin
     restart: unless-stopped
 
     ports:
-      - "5540:5540"
-
-    volumes:
-      - redisinsight_data:/data
+      - "8081:8080"
 
     environment:
-      REDIS_HOSTS: local:valkey:6379
+      VALKEY_HOST: valkey
+      VALKEY_PORT: 6379
+      KEY_VALUE_SIZE_LIMIT_BYTES: 10485760
 
     depends_on:
       - valkey
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    restart: unless-stopped
+
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      SPAN_STORAGE_TYPE: "opensearch"
+      ES_SERVER_URLS: "http://opensearch:9200"
+      ES_TLS_ENABLED: "false"
+
+    depends_on:
+      - opensearch
+
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: phoenix
+    restart: unless-stopped
+
+    ports:
+      - "6006:6006"
+      - "14317:4317"
+      - "14318:4318"
+
+    environment:
+      PHOENIX_TELEMETRY_ENABLED: "false"
+
+    volumes:
+      - phoenix_data:/mnt/data
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    restart: unless-stopped
+
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    restart: unless-stopped
+
+    ports:
+      - "5601:5601"
+
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+
+    depends_on:
+      - opensearch
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
@@ -184,10 +251,11 @@ services:
 
 volumes:
   valkey_data:
-  redisinsight_data:
   clickhouse_data:
   clickhouse_logs:
   tabix_data:
   minio_data:
   postgres_data:
   pgadmin_data:
+  opensearch_data:
+  phoenix_data:

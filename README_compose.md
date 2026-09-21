@@ -4,17 +4,21 @@ A complete Docker Compose setup for running **Langfuse** - an open-source LLM ob
 
 ## 📋 Services
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| **PostgreSQL** | 5432 | Primary relational database |
-| **pgAdmin** | 5050 | PostgreSQL management UI |
-| **Langfuse Web** | 3000 | Main web UI for LLM observability |
-| **Langfuse Worker** | N/A | Background job processing |
-| **Valkey** | 6379 | Caching and real-time data |
-| **RedisInsight** | 5540 | Valkey management UI |
-| **ClickHouse** | 8123, 9000 | Analytics database |
-| **Tabix** | 8080 | ClickHouse web UI |
-| **MinIO** | 9002, 9001 | S3-compatible object storage |
+| Service | Port | Access URL / Connection | Purpose |
+|---------|------|-------------------------|---------|
+| **PostgreSQL** | 5432 | `localhost:5432` | Primary relational database |
+| **pgAdmin** | 5050 | [http://localhost:5050](http://localhost:5050) | PostgreSQL management UI |
+| **Langfuse Web** | 3000 | [http://localhost:3000](http://localhost:3000) | Main web UI for LLM observability |
+| **Langfuse Worker** | N/A | N/A (Background process) | Background job processing |
+| **Valkey** | 6379 | `localhost:6379` | Caching and real-time data |
+| **Valkey Admin** | 8081 | [http://localhost:8081](http://localhost:8081) | Valkey management UI |
+| **RedisInsight (optional)** | 5540 | [http://localhost:5540](http://localhost:5540) | Alternative Valkey management UI |
+| **Jaeger** | 16686, 4317, 4318 | [http://localhost:16686](http://localhost:16686) | Distributed tracing UI and OTLP collector |
+| **OpenSearch** | 9200, 9600 | `localhost:9200` | Search and analytics engine |
+| **OpenSearch Dashboards** | 5601 | [http://localhost:5601](http://localhost:5601) | OpenSearch web UI |
+| **ClickHouse** | 8123, 9000 | `localhost:8123` (HTTP) / `9000` (Native) | Analytics database |
+| **Tabix** | 8080 | [http://localhost:8080](http://localhost:8080) | ClickHouse web UI |
+| **MinIO** | 9002, 9001 | [http://localhost:9001](http://localhost:9001) (Console) / `:9002` (API) | S3-compatible object storage |
 
 ## 🚀 Quick Start
 
@@ -32,7 +36,11 @@ docker-compose up -d
 
 - **Langfuse UI**: http://localhost:3000
 - **pgAdmin**: http://localhost:5050 (admin@example.com / admin)
-- **RedisInsight**: http://localhost:5540
+- **Valkey Admin**: http://localhost:8081
+- **RedisInsight (optional)**: http://localhost:5540
+- **Jaeger UI**: http://localhost:16686
+- **OpenSearch API**: http://localhost:9200
+- **OpenSearch Dashboards**: http://localhost:5601
 - **ClickHouse Tabix**: http://localhost:8080
 - **MinIO Console**: http://localhost:9001
 
@@ -91,9 +99,15 @@ Default credentials (change in production):
 ┌─────────────────────────────────────┐
 │  Langfuse Web (Port 3000)           │
 │  + Langfuse Worker (Background)     │
+┌─────────────────────────────────────┐
+│  Jaeger UI (Port 16686)             │
+│  ├─ OTLP (Ports 4317, 4318)         │
+│  OpenSearch (Ports 9200, 9600)      │
+└─────────────────────────────────────┘
 ├─────────────────────────────────────┤
 │  Valkey (Port 6379)                 │
-│  ├─ RedisInsight (Port 5540)        │
+│  ├─ Valkey Admin (Port 8081)         │
+│  ├─ RedisInsight (Optional, Port 5540)│
 └─────────────────────────────────────┘
 ┌─────────────────────────────────────┐
 │  ClickHouse (Port 8123, 9000)       │
@@ -150,9 +164,22 @@ docker-compose restart [service-name]
 docker-compose logs -f [service-name]
 ```
 
-**Example**: Start just Valkey and RedisInsight:
+**Example**: Start just Valkey and Valkey Admin:
 ```bash
-docker-compose up -d valkey redisinsight
+docker-compose up -d valkey valkey-admin
+```
+
+**Optional**: Run RedisInsight instead of Valkey Admin:
+```bash
+docker run -d --name redisinsight -p 5540:5540 \
+	-e REDIS_HOSTS=local:host.docker.internal:6379 \
+	--add-host=host.docker.internal:host-gateway \
+	redis/redisinsight:latest
+```
+
+**Example**: Start Jaeger and OpenSearch:
+```bash
+docker-compose up -d jaeger opensearch opensearch-dashboards
 ```
 
 **Available service names**:
@@ -161,7 +188,11 @@ docker-compose up -d valkey redisinsight
 - `langfuse-web`
 - `langfuse-worker`
 - `valkey`
-- `redisinsight`
+- `valkey-admin`
+- `redisinsight` (optional, standalone container)
+- `jaeger`
+- `opensearch`
+- `opensearch-dashboards`
 - `clickhouse`
 - `tabix`
 - `minio`
@@ -204,9 +235,11 @@ docker system prune -a --volumes
 ## 📝 Notes
 
 - All services are configured with `restart: unless-stopped` for automatic recovery
-- Data is persisted in Docker volumes: `postgres_data`, `pgadmin_data`, `valkey_data`, `redisinsight_data`, `clickhouse_data`, `clickhouse_logs`, `minio_data`
+- Data is persisted in Docker volumes: `postgres_data`, `pgadmin_data`, `valkey_data`, `opensearch_data`, `clickhouse_data`, `clickhouse_logs`, `minio_data`
 - Telemetry is disabled (`TELEMETRY_ENABLED: "false"`)
 - **Valkey** (a high-performance in-memory data store) replaces Redis for caching and real-time data
+- **Jaeger** accepts OTLP traces over gRPC on port `4317` and HTTP on port `4318`
+- **OpenSearch** runs as a single-node local development service with its security plugin disabled
 - Local PostgreSQL service must be stopped/uninstalled to avoid port conflicts (port 5432)
 
 ## 🔐 Security Considerations
@@ -214,6 +247,7 @@ docker system prune -a --volumes
 - **PostgreSQL**: Change default credentials (`postgres:postgres`) in production
 - **pgAdmin**: Change default credentials (`admin@example.com:admin`) in production
 - **MinIO**: Change default credentials (`minioadmin:minioadmin`) in production
+- **OpenSearch**: Enable and configure security before exposing it outside local development
 - Replace `NEXTAUTH_SECRET` and `SALT` with secure random values
 - Restrict access to exposed ports (use firewall rules in production)
 - Use strong, unique credentials for all services
@@ -226,4 +260,7 @@ docker system prune -a --volumes
 - [ClickHouse Docs](https://clickhouse.com/docs)
 - [MinIO Docs](https://docs.min.io/)
 - [Valkey Docs](https://valkey.io/docs)
+- [Valkey Admin](https://valkey-admin.valkey.io/)
 - [RedisInsight Docs](https://docs.redis.com/latest/ri/)
+- [Jaeger Docs](https://www.jaegertracing.io/docs/)
+- [OpenSearch Docs](https://opensearch.org/docs/latest/)
