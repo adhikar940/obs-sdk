@@ -35,14 +35,10 @@ pip install -r requirements.txt
 | :--- | :--- | :--- |
 | `OTEL_SERVICE_NAME` | Default service name attached to the OTel Resource (`service.name`) | `unknown-service` |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | Default OTLP protocol (`http` or `grpc`) | `http` |
-| `LOCAL_LANGFUSE_EXPORT` | Enable export to local Langfuse / collector (`true`/`false`) | `false` |
-| `LOCAL_LANGFUSE_ENDPOINT` | Local OTLP traces endpoint | `http://localhost:4318` |
-| `LOCAL_LANGFUSE_API_KEY` | Optional API key / bearer token for local exporter | None |
-| `LOCAL_LANGFUSE_PROTOCOL` | Override protocol for local Langfuse (`http` or `grpc`) | Inherits global protocol |
-| `REMOTE_LANGFUSE_EXPORT` | Enable export to remote Langfuse (`true`/`false`) | `false` |
-| `REMOTE_LANGFUSE_ENDPOINT` | Remote Langfuse OTLP endpoint (e.g. `https://cloud.langfuse.com/api/public/otel`) | None |
-| `REMOTE_LANGFUSE_API_KEY` | Remote Langfuse API key / bearer token | None |
-| `REMOTE_LANGFUSE_PROTOCOL` | Override protocol for remote Langfuse (`http` or `grpc`) | Inherits global protocol |
+| `LANGFUSE_EXPORT` | Enable export to Langfuse (`true`/`false`) | `false` |
+| `LANGFUSE_ENDPOINT` | Langfuse OTLP traces endpoint | `http://localhost:3000/api/public/otel` |
+| `LANGFUSE_API_KEY` | Optional API key / bearer token for Langfuse | None |
+| `LANGFUSE_PROTOCOL` | Override protocol for Langfuse (`http` or `grpc`) | Inherits global protocol |
 | `ARIZE_EXPORT` | Enable export to Arize Phoenix (`true`/`false`) | `false` |
 | `ARIZE_ENDPOINT` | Arize Phoenix OTLP endpoint | HTTP: `http://localhost:6006/v1/traces`, gRPC: `http://localhost:14317` |
 | `ARIZE_PROTOCOL` | Protocol for Arize Phoenix (`http` or `grpc`) | Inherits global protocol |
@@ -50,7 +46,7 @@ pip install -r requirements.txt
 | `ARIZE_PROJECT_NAME` | Optional project name header for Arize Phoenix | None |
 | `CONSOLE_EXPORT` | Enable console span exporter (`true`/`false`) | `false` |
 | `AUTO_INSTRUMENT` | Enable auto-instrumentation (`true`/`false`) | `true` |
-| `AUTO_INSTRUMENTATIONS` | Comma-separated list of libraries to instrument (e.g. `requests,redis`) | `requests,psycopg2,redis,dbapi` |
+| `AUTO_INSTRUMENTATIONS` | Comma-separated list of libraries to instrument | `requests,httpx,urllib,urllib3,aiohttp,postgres,psycopg2,redis,dbapi` |
 
 ---
 
@@ -135,15 +131,19 @@ shutdown()
 
 ### 4. Configurable Auto-Instrumentation
 
-By default, `init_observability` enables auto-instrumentation for common libraries (`requests`, `psycopg2`, `redis`, `dbapi`). You can specify exactly which libraries to instrument:
+By default, `init_observability` enables auto-instrumentation for common HTTP clients and data stores:
+- **HTTP Clients**: `requests`, `httpx`, `urllib`, `urllib3`, `aiohttp`
+- **Databases & Caches**: `postgres` (`psycopg2`, `psycopg`, `asyncpg`), `redis`, `dbapi`
+
+You can specify exactly which libraries to instrument:
 
 ```python
 from obs_sdk import init_observability
 
-# Instrument only requests and redis
+# Instrument HTTP clients and PostgreSQL
 provider = init_observability(
     service_name="web-scraper",
-    instrumentations=["requests", "redis"],
+    instrumentations=["requests", "httpx", "aiohttp", "urllib", "postgres"],
 )
 
 # Disable auto-instrumentation entirely

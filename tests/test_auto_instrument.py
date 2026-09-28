@@ -8,11 +8,11 @@ def test_auto_instrumentation_to_multiple_backends():
     env = os.environ.copy()
     env.update({
         "OTEL_SERVICE_NAME": os.getenv("OTEL_SERVICE_NAME"),
-        "LOCAL_LANGfUSE_EXPORT": os.getenv("LOCAL_LANGfUSE_EXPORT"),
-        "LOCAL_LANGfUSE_ENDPOINT": os.getenv("LOCAL_LANGfUSE_ENDPOINT"),
-        "REMOTE_LANGfUSE_EXPORT": os.getenv("REMOTE_LANGfUSE_EXPORT"),
-        "REMOTE_LANGfUSE_ENDPOINT": os.getenv("REMOTE_LANGfUSE_ENDPOINT"),
-        "REMOTE_LANGfUSE_API_KEY": os.getenv("REMOTE_LANGfUSE_API_KEY"),
+        "LANGFUSE_EXPORT": os.getenv("LANGFUSE_EXPORT") or os.getenv("LOCAL_LANGfUSE_EXPORT"),
+        "LANGFUSE_ENDPOINT": os.getenv("LANGFUSE_ENDPOINT") or os.getenv("LOCAL_LANGfUSE_ENDPOINT"),
+        "LANGFUSE_API_KEY": os.getenv("LANGFUSE_API_KEY") or os.getenv("REMOTE_LANGfUSE_API_KEY"),
+        "ARIZE_EXPORT": os.getenv("ARIZE_EXPORT"),
+        "ARIZE_ENDPOINT": os.getenv("ARIZE_ENDPOINT"),
         "CONSOLE_EXPORT": os.getenv("CONSOLE_EXPORT"),
         "OTEL_LOG_LEVEL": "debug",
     })

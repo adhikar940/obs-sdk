@@ -13,41 +13,14 @@ def load_config() -> Dict[str, Any]:
     if protocol == "http/protobuf":
         protocol = "http"
 
-    local_langfuse_export = (
-        os.getenv("LOCAL_LANGFUSE_EXPORT")
-        or os.getenv("LOCAL_LANGfUSE_EXPORT", "false")
+    # Langfuse configuration
+    langfuse_export = os.getenv("LANGFUSE_EXPORT", "false")
+    langfuse_protocol = (os.getenv("LANGFUSE_PROTOCOL") or protocol).lower().strip()
+    default_langfuse_endpoint = (
+        "http://localhost:4317" if langfuse_protocol == "grpc" else "http://localhost:3000/api/public/otel"
     )
-    remote_langfuse_export = (
-        os.getenv("REMOTE_LANGFUSE_EXPORT")
-        or os.getenv("REMOTE_LANGfUSE_EXPORT", "false")
-    )
-    console_export = os.getenv("CONSOLE_EXPORT", "false")
-
-    local_langfuse_endpoint = (
-        os.getenv("LOCAL_LANGFUSE_ENDPOINT")
-        or os.getenv("LOCAL_LANGfUSE_ENDPOINT", "http://localhost:4318")
-    )
-    local_langfuse_api_key = (
-        os.getenv("LOCAL_LANGFUSE_API_KEY")
-        or os.getenv("LOCAL_LANGfUSE_API_KEY")
-    )
-    local_langfuse_protocol = (
-        os.getenv("LOCAL_LANGFUSE_PROTOCOL")
-        or protocol
-    ).lower().strip()
-
-    remote_langfuse_endpoint = (
-        os.getenv("REMOTE_LANGFUSE_ENDPOINT")
-        or os.getenv("REMOTE_LANGfUSE_ENDPOINT")
-    )
-    remote_langfuse_api_key = (
-        os.getenv("REMOTE_LANGFUSE_API_KEY")
-        or os.getenv("REMOTE_LANGfUSE_API_KEY")
-    )
-    remote_langfuse_protocol = (
-        os.getenv("REMOTE_LANGFUSE_PROTOCOL")
-        or protocol
-    ).lower().strip()
+    langfuse_endpoint = os.getenv("LANGFUSE_ENDPOINT") or default_langfuse_endpoint
+    langfuse_api_key = os.getenv("LANGFUSE_API_KEY")
 
     # Arize Phoenix configuration
     arize_export = (
@@ -69,6 +42,10 @@ def load_config() -> Dict[str, Any]:
     arize_api_key = os.getenv("ARIZE_API_KEY") or os.getenv("PHOENIX_API_KEY")
     arize_project_name = os.getenv("ARIZE_PROJECT_NAME") or os.getenv("PHOENIX_PROJECT_NAME")
 
+    # Console
+    console_export = os.getenv("CONSOLE_EXPORT", "false")
+
+    # Auto-instrumentation
     auto_instrument_raw = os.getenv("AUTO_INSTRUMENT", "true").lower()
     auto_instrument = auto_instrument_raw in ("true", "1", "yes")
 
@@ -82,14 +59,10 @@ def load_config() -> Dict[str, Any]:
     return {
         "service_name": os.getenv("OTEL_SERVICE_NAME", "unknown-service"),
         "protocol": protocol,
-        "local_langfuse_export": str(local_langfuse_export).lower() == "true",
-        "local_langfuse_endpoint": local_langfuse_endpoint,
-        "local_langfuse_api_key": local_langfuse_api_key,
-        "local_langfuse_protocol": local_langfuse_protocol,
-        "remote_langfuse_export": str(remote_langfuse_export).lower() == "true",
-        "remote_langfuse_endpoint": remote_langfuse_endpoint,
-        "remote_langfuse_api_key": remote_langfuse_api_key,
-        "remote_langfuse_protocol": remote_langfuse_protocol,
+        "langfuse_export": str(langfuse_export).lower() == "true",
+        "langfuse_endpoint": langfuse_endpoint,
+        "langfuse_api_key": langfuse_api_key,
+        "langfuse_protocol": langfuse_protocol,
         "arize_export": str(arize_export).lower() == "true",
         "arize_endpoint": arize_endpoint,
         "arize_api_key": arize_api_key,

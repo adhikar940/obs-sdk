@@ -50,41 +50,49 @@ def setup_exporters(tracer_provider, config: dict):
     """Set up exporters based on config."""
     global_protocol = config.get("protocol", "http")
 
-    # 1. Local Langfuse
-    if config.get("local_langfuse_export"):
-        endpoint = config["local_langfuse_endpoint"]
-        protocol = config.get("local_langfuse_protocol", global_protocol)
+    # 1. Langfuse Exporter (unified for both local and remote)
+    if (
+        config.get("langfuse_export")
+        or config.get("local_langfuse_export")
+        or config.get("remote_langfuse_export")
+    ):
+        endpoint = (
+            config.get("langfuse_endpoint")
+            or config.get("local_langfuse_endpoint")
+            or config.get("remote_langfuse_endpoint")
+        )
+        if not endpoint:
+            raise ValueError("LANGFUSE_ENDPOINT must be set when LANGFUSE_EXPORT is enabled")
+
+        protocol = (
+            config.get("langfuse_protocol")
+            or config.get("local_langfuse_protocol")
+            or config.get("remote_langfuse_protocol")
+            or global_protocol
+        )
         headers = {}
-        if config.get("local_langfuse_api_key"):
-            headers["Authorization"] = f"Bearer {config['local_langfuse_api_key']}"
-        local_exporter = create_otlp_exporter(
+        api_key = (
+            config.get("langfuse_api_key")
+            or config.get("remote_langfuse_api_key")
+            or config.get("local_langfuse_api_key")
+        )
+        if api_key:
+            headers["Authorization"] = (
+                api_key
+                if api_key.startswith("Bearer ") or api_key.startswith("Basic ")
+                else f"Bearer {api_key}"
+            )
+
+        langfuse_exporter = create_otlp_exporter(
             endpoint=endpoint,
             headers=headers if headers else None,
             protocol=protocol,
         )
         tracer_provider.add_span_processor(
-            BatchSpanProcessor(local_exporter)
+            BatchSpanProcessor(langfuse_exporter)
         )
 
-    # 2. Remote Langfuse
-    if config.get("remote_langfuse_export"):
-        if not config.get("remote_langfuse_endpoint"):
-            raise ValueError("REMOTE_LANGFUSE_ENDPOINT must be set")
-        endpoint = config["remote_langfuse_endpoint"]
-        protocol = config.get("remote_langfuse_protocol", global_protocol)
-        headers = {}
-        if config.get("remote_langfuse_api_key"):
-            headers["Authorization"] = f"Bearer {config['remote_langfuse_api_key']}"
-        remote_exporter = create_otlp_exporter(
-            endpoint=endpoint,
-            headers=headers if headers else None,
-            protocol=protocol,
-        )
-        tracer_provider.add_span_processor(
-            BatchSpanProcessor(remote_exporter)
-        )
-
-    # 3. Arize Phoenix
+    # 2. Arize Phoenix Exporter
     if config.get("arize_export"):
         if not config.get("arize_endpoint"):
             raise ValueError("ARIZE_ENDPOINT must be set when ARIZE_EXPORT is enabled")
@@ -105,7 +113,7 @@ def setup_exporters(tracer_provider, config: dict):
             BatchSpanProcessor(arize_exporter)
         )
 
-    # 4. Console Exporter
+    # 3. Console Exporter
     if config.get("console_export"):
         console_exporter = ConsoleSpanExporter()
         tracer_provider.add_span_processor(
